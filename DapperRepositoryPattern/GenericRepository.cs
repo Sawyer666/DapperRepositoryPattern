@@ -104,27 +104,30 @@ namespace DapperRepositoryPattern
 
         public async Task InsertAsync(T t)
         {
-            var insertQuery = GenerateInsertQuery();
-            NpgsqlTransaction tranc = null;
-            using (var connection = CreateConnection())
-            {
-                try
-                {
-                    tranc = (NpgsqlTransaction)connection.BeginTransaction();
-                    for (int r = 0; r < 50000; r++)
-                    {
-                         connection.Execute(insertQuery, t);
-                    }
-                    tranc.Commit();
-                }
-                catch (Exception)
-                {
-                }
-                finally
-                {
-                    tranc.Dispose();
-                }
-            }
+            await Task.Factory.StartNew(() =>
+           {
+               var insertQuery = GenerateInsertQuery();
+               NpgsqlTransaction tranc = null;
+               using (var connection = CreateConnection())
+               {
+                   try
+                   {
+                       tranc = (NpgsqlTransaction)connection.BeginTransaction();
+                       for (int r = 0; r < 50000; r++)
+                       {
+                           connection.Execute(insertQuery, t);
+                       }
+                       tranc.Commit();
+                   }
+                   catch (Exception)
+                   {
+                   }
+                   finally
+                   {
+                       tranc.Dispose();
+                   }
+               }
+           });
         }
 
         public async Task<int> SaveRangeAsync(IEnumerable<T> data)
